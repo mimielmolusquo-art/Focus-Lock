@@ -1,0 +1,6 @@
+{
+  "name": "Focus Lock",
+  "description": "Protège ton attention en restreignant l'accès aux applications distrayantes pendant vos sessions de concentration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
