@@ -1,6 +1,5 @@
 <resources>
-    <string name="app_name">Focus Lock</string>
+    <string name="app_name">Focus Delivery</string>
     <string name="accessibility_service_label">Focus Lock Service</string>
-    <string name="accessibility_service_description">Détecte l\'ouverture des applications restreintes pendant vos sessions de concentration pour vous aider à rester focalisé sur votre objectif.</string>
+    <string name="accessibility_service_description">Détecte les applications restreintes pendant les sessions de concentration.</string>
 </resources>
-
