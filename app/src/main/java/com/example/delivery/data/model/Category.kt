@@ -5,4 +5,7 @@ data class Category(
     val name: String,
     val emoji: String,
     val requiredAccessId: String? = null,
+    val isActive: Boolean = true,
+    val createdAt: Long? = null,
+    val updatedAt: Long? = null,
 )

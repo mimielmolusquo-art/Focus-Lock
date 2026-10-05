@@ -2,6 +2,7 @@ package com.example.delivery
 
 import com.example.delivery.data.local.InMemoryDeliveryLocalStore
 import com.example.delivery.data.repository.ConfiguredMenuAccessCodeValidator
+import com.example.delivery.data.repository.DeliveryProductSeed
 import com.example.delivery.data.repository.MenuAccessCode
 import com.example.delivery.data.repository.MenuAccessCodeValidator
 import com.example.delivery.viewmodel.DeliveryViewModel
@@ -94,10 +95,13 @@ class DeliveryViewModelTest {
     }
 
     @Test
-    fun `demo catalog has three public categories and bowls start at thirty euros`() {
+    fun `demo catalog includes legacy categories and bowls start at thirty euros`() {
         val viewModel = DeliveryViewModel()
 
-        assertEquals(setOf("burgers", "pizza", "bowls"), viewModel.categories.map { it.id }.toSet())
+        assertEquals(
+            setOf("burgers", "pizza", "bowls") + DeliveryProductSeed.categories.map { it.id },
+            viewModel.categories.map { it.id }.toSet(),
+        )
         viewModel.categories.forEach { category ->
             assertTrue(viewModel.products.any { it.categoryId == category.id })
         }
@@ -106,6 +110,35 @@ class DeliveryViewModelTest {
         assertNull(viewModel.product("private-tasting-menu"))
         assertTrue(!viewModel.unlockMenu("incorrect"))
         assertNull(viewModel.product("private-tasting-menu"))
+    }
+
+    @Test
+    fun `CBD product seed contains every requested category variant and exact price`() {
+        val expected = mapOf(
+            "AMNESIA HAZE" to listOf("5G" to 4_000L, "10G" to 7_000L, "25G" to 13_000L, "50G" to 24_000L),
+            "JAUNE MOUSSEUX" to listOf("12G" to 5_000L, "25G" to 8_000L, "50G" to 14_000L, "100G" to 25_000L),
+            "FROZEN" to listOf("5G" to 7_000L, "10G" to 12_000L, "25G" to 25_000L, "50G" to 45_000L, "100G" to 85_000L),
+            "STATIC PREMIUM" to listOf("5G" to 6_000L, "10G" to 11_000L, "25G" to 24_000L, "50G" to 44_000L, "100G" to 83_000L),
+        )
+        val categoriesById = DeliveryProductSeed.categories.associateBy { it.id }
+
+        assertEquals(expected.keys, DeliveryProductSeed.categories.map { it.name }.toSet())
+        assertEquals(18, DeliveryProductSeed.products.size)
+        assertEquals(18, DeliveryProductSeed.products.map { it.id }.toSet().size)
+        expected.forEach { (categoryName, variants) ->
+            val category = DeliveryProductSeed.categories.single { it.name == categoryName }
+            assertEquals(
+                variants,
+                DeliveryProductSeed.products
+                    .filter { it.categoryId == category.id }
+                    .map { it.variantLabel to it.priceCents },
+            )
+            DeliveryProductSeed.products.filter { it.categoryId == category.id }.forEach { product ->
+                assertEquals(categoryName, product.categoryName)
+                assertEquals(categoryName, categoriesById.getValue(product.categoryId).name)
+                assertTrue(product.name.contains(product.variantLabel.orEmpty()))
+            }
+        }
     }
 
     @Test

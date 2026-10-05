@@ -8,4 +8,13 @@ data class Product(
     val categoryId: String,
     val imagePlaceholder: String,
     val featured: Boolean = false,
+    val imageUrl: String? = null,
+    val storagePath: String? = null,
+    val isActive: Boolean = true,
+    val isPrivate: Boolean = false,
+    val accessId: String? = null,
+    val createdAt: Long? = null,
+    val updatedAt: Long? = null,
+    val categoryName: String? = null,
+    val variantLabel: String? = null,
 )

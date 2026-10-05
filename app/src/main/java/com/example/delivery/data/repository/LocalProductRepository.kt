@@ -9,7 +9,7 @@ object LocalProductRepository : ProductRepository {
         Category("pizza", "Pizzas", "🍕"),
         Category("bowls", "Bowls", "🥗"),
         Category("private-menu", "Menu privé", "🔒", requiredAccessId = "private-menu"),
-    )
+    ) + DeliveryProductSeed.categories
 
     private val products = listOf(
         Product(
@@ -71,6 +71,8 @@ object LocalProductRepository : ProductRepository {
             4900,
             "private-menu",
             "✨",
+            isPrivate = true,
+            accessId = "private-menu",
         ),
         Product(
             "private-chef-bowl",
@@ -79,8 +81,10 @@ object LocalProductRepository : ProductRepository {
             3600,
             "private-menu",
             "👨‍🍳",
+            isPrivate = true,
+            accessId = "private-menu",
         ),
-    )
+    ) + DeliveryProductSeed.products
 
     override fun getCategories(unlockedAccessIds: Set<String>): List<Category> =
         categories.filter { category ->
@@ -89,7 +93,7 @@ object LocalProductRepository : ProductRepository {
 
     override fun getProducts(unlockedAccessIds: Set<String>): List<Product> {
         val visibleCategoryIds = getCategories(unlockedAccessIds).mapTo(mutableSetOf()) { it.id }
-        return products.filter { it.categoryId in visibleCategoryIds }
+        return products.filter { it.isActive && it.categoryId in visibleCategoryIds }
     }
 
     override fun getProduct(productId: String, unlockedAccessIds: Set<String>): Product? =
