@@ -1,5 +1,6 @@
 package com.example.delivery.ui.components
 
+import android.content.res.Resources
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Image
@@ -34,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -80,16 +82,23 @@ fun ProductCard(
                 contentAlignment = Alignment.Center,
             ) {
                 val imageResId = product.imageResId
-                if (imageResId != null) {
-                    Image(
-                        painter = painterResource(imageResId),
-                        contentDescription = product.name,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.size(90.dp).clip(RoundedCornerShape(19.dp)),
-                    )
-                } else {
-                    Text(text = product.imagePlaceholder, style = MaterialTheme.typography.displaySmall)
+                val context = LocalContext.current
+                val drawableResId = remember(imageResId) {
+                    imageResId?.let { candidate ->
+                        try {
+                            context.resources.getResourceName(candidate)
+                            candidate
+                        } catch (_: Resources.NotFoundException) {
+                            android.R.drawable.ic_menu_gallery
+                        }
+                    } ?: android.R.drawable.ic_menu_gallery
                 }
+                Image(
+                    painter = painterResource(drawableResId),
+                    contentDescription = product.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(90.dp).clip(RoundedCornerShape(19.dp)),
+                )
             }
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
