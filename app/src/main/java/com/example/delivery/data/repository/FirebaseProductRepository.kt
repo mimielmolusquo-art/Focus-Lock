@@ -15,7 +15,7 @@ class FirebaseProductRepository(
         firestore.collection(CATEGORIES_COLLECTION).get().continueWith { task ->
             val documents = task.requireSuccess().documents
             if (documents.isEmpty()) {
-                return@continueWith DeliveryProductSeed.categories
+                return@continueWith DeliveryProductSeed.categories.filter { it.requiredAccessId == null }
             }
             documents
                 .map(DocumentSnapshot::toCategory)
@@ -36,7 +36,7 @@ class FirebaseProductRepository(
                 .continueWith { productTask ->
                     val documents = productTask.requireSuccess().documents
                     if (useSeedCatalog && documents.isEmpty()) {
-                        return@continueWith DeliveryProductSeed.products
+                        return@continueWith DeliveryProductSeed.products.filterNot { it.isPrivate }
                     }
                     documents
                         .map { snapshot -> snapshot.toProduct(categories[snapshot.getString("categoryId")]?.name) }
@@ -59,7 +59,9 @@ class FirebaseProductRepository(
                     return@continueWithTask firestore.collection(CATEGORIES_COLLECTION).get()
                         .continueWith { categoryTask ->
                             if (categoryTask.requireSuccess().documents.isEmpty()) {
-                                DeliveryProductSeed.products.firstOrNull { it.id == productId }
+                                DeliveryProductSeed.products.firstOrNull {
+                                    it.id == productId && !it.isPrivate
+                                }
                             } else {
                                 null
                             }

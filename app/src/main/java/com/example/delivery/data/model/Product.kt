@@ -7,6 +7,7 @@ data class Product(
     val priceCents: Long,
     val categoryId: String,
     val imagePlaceholder: String,
+    val imageResId: Int? = null,
     val featured: Boolean = false,
     val imageUrl: String? = null,
     val storagePath: String? = null,

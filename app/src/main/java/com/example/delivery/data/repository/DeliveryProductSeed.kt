@@ -1,14 +1,15 @@
 package com.example.delivery.data.repository
 
+import com.example.R
 import com.example.delivery.data.model.Category
 import com.example.delivery.data.model.Product
 
 object DeliveryProductSeed {
     val categories = listOf(
-        Category("amnesia-haze", "AMNESIA HAZE", "🍃"),
-        Category("jaune-mousseux", "JAUNE MOUSSEUX", "🍃"),
-        Category("frozen", "FROZEN", "❄️"),
-        Category("static-premium", "STATIC PREMIUM", "✨"),
+        Category("amnesia-haze", "AMNESIA HAZE", "🍃", requiredAccessId = MENU_ACCESS_ID),
+        Category("jaune-mousseux", "JAUNE MOUSSEUX", "🍃", requiredAccessId = MENU_ACCESS_ID),
+        Category("frozen", "FROZEN", "❄️", requiredAccessId = MENU_ACCESS_ID),
+        Category("static-premium", "STATIC PREMIUM", "✨", requiredAccessId = MENU_ACCESS_ID),
     )
 
     val products = listOf(
@@ -44,7 +45,18 @@ object DeliveryProductSeed {
         priceCents = priceCents,
         categoryId = categoryId,
         imagePlaceholder = "🍃",
+        imageResId = when (categoryId) {
+            "amnesia-haze" -> R.drawable.amnesia_haze
+            "jaune-mousseux" -> R.drawable.jaune_mousseux
+            "frozen" -> R.drawable.frozen
+            "static-premium" -> R.drawable.static_premium
+            else -> null
+        },
+        isPrivate = true,
+        accessId = MENU_ACCESS_ID,
         categoryName = categoryName,
         variantLabel = variantLabel,
     )
+
+    const val MENU_ACCESS_ID = "private-menu"
 }

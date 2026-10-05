@@ -1,5 +1,6 @@
 package com.example.delivery
 
+import com.example.R
 import com.example.delivery.data.local.InMemoryDeliveryLocalStore
 import com.example.delivery.data.repository.ConfiguredMenuAccessCodeValidator
 import com.example.delivery.data.repository.DeliveryProductSeed
@@ -98,18 +99,45 @@ class DeliveryViewModelTest {
     fun `demo catalog includes legacy categories and bowls start at thirty euros`() {
         val viewModel = DeliveryViewModel()
 
-        assertEquals(
-            setOf("burgers", "pizza", "bowls") + DeliveryProductSeed.categories.map { it.id },
-            viewModel.categories.map { it.id }.toSet(),
-        )
+        assertEquals(setOf("burgers", "pizza", "bowls"), viewModel.categories.map { it.id }.toSet())
         viewModel.categories.forEach { category ->
             assertTrue(viewModel.products.any { it.categoryId == category.id })
         }
         val bowlPrices = viewModel.products.filter { it.categoryId == "bowls" }.map { it.priceCents }
         assertEquals(listOf(3_000L, 3_500L), bowlPrices)
-        assertNull(viewModel.product("private-tasting-menu"))
+        assertTrue(DeliveryProductSeed.categories.none { category -> viewModel.categories.any { it.id == category.id } })
+        assertTrue(DeliveryProductSeed.products.none { product -> viewModel.products.any { it.id == product.id } })
+        assertNull(viewModel.product("amnesia-haze-5g"))
         assertTrue(!viewModel.unlockMenu("incorrect"))
-        assertNull(viewModel.product("private-tasting-menu"))
+        assertNull(viewModel.product("amnesia-haze-5g"))
+    }
+
+    @Test
+    fun `code 2401 alone reveals the four restricted CBD categories and products`() {
+        val viewModel = DeliveryViewModel()
+
+        assertTrue(viewModel.unlockMenu("2401"))
+        assertEquals(
+            DeliveryProductSeed.categories.map { it.id }.toSet(),
+            viewModel.categories.filter { it.requiredAccessId != null }.map { it.id }.toSet(),
+        )
+        assertEquals(
+            DeliveryProductSeed.products.map { it.id }.toSet(),
+            viewModel.products.filter { it.isPrivate }.map { it.id }.toSet(),
+        )
+        assertTrue(viewModel.products.filter { it.isPrivate }.all { it.accessId == "private-menu" })
+    }
+
+    @Test
+    fun `unlocked categories and products are not restored on a fresh viewmodel`() {
+        val viewModel = DeliveryViewModel()
+        assertTrue(viewModel.unlockMenu("2401"))
+        assertTrue(viewModel.categories.any { it.requiredAccessId != null })
+
+        val restartedViewModel = DeliveryViewModel()
+        assertEquals(setOf("burgers", "pizza", "bowls"), restartedViewModel.categories.map { it.id }.toSet())
+        assertTrue(restartedViewModel.products.none { it.isPrivate })
+        assertNull(restartedViewModel.product("amnesia-haze-5g"))
     }
 
     @Test
@@ -121,6 +149,12 @@ class DeliveryViewModelTest {
             "STATIC PREMIUM" to listOf("5G" to 6_000L, "10G" to 11_000L, "25G" to 24_000L, "50G" to 44_000L, "100G" to 83_000L),
         )
         val categoriesById = DeliveryProductSeed.categories.associateBy { it.id }
+        val imagesByCategory = mapOf(
+            "amnesia-haze" to R.drawable.amnesia_haze,
+            "jaune-mousseux" to R.drawable.jaune_mousseux,
+            "frozen" to R.drawable.frozen,
+            "static-premium" to R.drawable.static_premium,
+        )
 
         assertEquals(expected.keys, DeliveryProductSeed.categories.map { it.name }.toSet())
         assertEquals(18, DeliveryProductSeed.products.size)
@@ -137,6 +171,7 @@ class DeliveryViewModelTest {
                 assertEquals(categoryName, product.categoryName)
                 assertEquals(categoryName, categoriesById.getValue(product.categoryId).name)
                 assertTrue(product.name.contains(product.variantLabel.orEmpty()))
+                assertEquals(imagesByCategory.getValue(category.id), product.imageResId)
             }
         }
     }
@@ -150,19 +185,19 @@ class DeliveryViewModelTest {
         )
 
         assertTrue(viewModel.unlockMenu("invite-42"))
-        assertNotNull(viewModel.product("private-tasting-menu"))
-        viewModel.addToCart("private-tasting-menu", quantity = 2)
+        assertNotNull(viewModel.product("amnesia-haze-5g"))
+        viewModel.addToCart("amnesia-haze-5g", quantity = 2)
         assertEquals(2, viewModel.cartItemCount())
-        assertEquals(9_800L, viewModel.subtotalCents())
-        assertEquals(10_090L, viewModel.totalCents())
-        viewModel.updateQuantity("private-tasting-menu", 1)
-        assertEquals(4_900L, viewModel.subtotalCents())
+        assertEquals(8_000L, viewModel.subtotalCents())
+        assertEquals(8_290L, viewModel.totalCents())
+        viewModel.updateQuantity("amnesia-haze-5g", 1)
+        assertEquals(4_000L, viewModel.subtotalCents())
 
         viewModel.setDeliveryAddress("12 rue des Fleurs, Paris")
         val order = viewModel.placeOrder()
         assertNotNull(order)
-        assertEquals("Menu dégustation secret", order?.items?.single()?.productName)
-        assertEquals(4_900L, order?.subtotalCents)
+        assertEquals("AMNESIA HAZE · 5G", order?.items?.single()?.productName)
+        assertEquals(4_000L, order?.subtotalCents)
         assertNull(viewModel.state.orderErrorMessage)
         assertEquals(order?.id, viewModel.state.orders.single().id)
     }
@@ -192,7 +227,7 @@ class DeliveryViewModelTest {
             menuAccessCodeValidator = MenuAccessCodeValidator { "private-menu" },
         )
         assertTrue(viewModel.unlockMenu("valid-code"))
-        viewModel.addToCart("private-tasting-menu")
+        viewModel.addToCart("amnesia-haze-5g")
         viewModel.addToCart("classic-burger")
         viewModel.setDeliveryAddress("12 rue des Fleurs, Paris")
 
@@ -216,9 +251,9 @@ class DeliveryViewModelTest {
         val viewModel = DeliveryViewModel(menuAccessCodeValidator = validator)
 
         assertTrue(!viewModel.unlockMenu("disabled-code"))
-        assertNull(viewModel.product("private-tasting-menu"))
+        assertNull(viewModel.product("amnesia-haze-5g"))
         assertTrue(viewModel.unlockMenu("enabled-code"))
-        assertNotNull(viewModel.product("private-tasting-menu"))
+        assertNotNull(viewModel.product("amnesia-haze-5g"))
     }
 
     @Test
@@ -238,7 +273,7 @@ class DeliveryViewModelTest {
         assertNull(restoredViewModel.placeOrder())
         assertTrue(restoredViewModel.state.orders.isEmpty())
         restoredViewModel.removeFromCart("classic-burger")
-        restoredViewModel.addToCart("private-tasting-menu")
+        restoredViewModel.addToCart("amnesia-haze-5g")
         val order = restoredViewModel.placeOrder()
         assertNotNull(order)
         assertTrue(restoredViewModel.state.cartItems.isEmpty())
@@ -256,7 +291,7 @@ class DeliveryViewModelTest {
             menuAccessCodeValidator = MenuAccessCodeValidator { "private-menu" },
         )
         viewModel.unlockMenu("valid-code")
-        viewModel.addToCart("private-tasting-menu", quantity = 2)
+        viewModel.addToCart("amnesia-haze-5g", quantity = 2)
 
         assertNull(viewModel.placeOrder())
 
@@ -266,13 +301,13 @@ class DeliveryViewModelTest {
         assertNotNull(order)
         assertEquals("12 rue des Fleurs, Paris", order?.address)
         assertEquals(2, order?.items?.single()?.quantity)
-        assertEquals(9_800L, order?.subtotalCents)
-        assertEquals(10_090L, order?.totalCents)
+        assertEquals(8_000L, order?.subtotalCents)
+        assertEquals(8_290L, order?.totalCents)
         assertEquals("Commande reçue", order?.status)
         assertTrue(viewModel.state.cartItems.isEmpty())
         assertEquals(0L, viewModel.totalCents())
 
-        viewModel.addToCart("private-tasting-menu")
+        viewModel.addToCart("amnesia-haze-5g")
         viewModel.setDeliveryAddress("Paris")
         assertTrue(order?.id != viewModel.placeOrder()?.id)
     }
